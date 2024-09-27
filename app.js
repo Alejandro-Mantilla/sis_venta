@@ -1,6 +1,7 @@
-const productRoutes = require('./routes/productRoutes');
 const express = require('express');
 const path = require('path');
+const productRoutes = require('./routes/productRoutes');
+const pool = require('./db'); // Importar la conexion a la base de datos
 const app = express();
 const PORT = 3000;
 

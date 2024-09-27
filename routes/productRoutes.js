@@ -1,19 +1,20 @@
 const express = require('express');
 const router = express.Router();
-
-// Ejemplo de lista de productos (esto se puede obtener de una base de datos)
-let productos = [
-    { id: 1, nombre: 'Celular XYZ', precio: 299},
-    { id: 2, nombre: 'Laptop ABC', precio: 799},
-];
+const pool = require('../db'); // Importar la conexión a la base de datos
 
 // Obtener todos los productos
-router.get('/', (req, res) => {
-    res.json(productos);
+router.get('/', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM productos');
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al obtener productos' });
+    }
 });
 
 // Agregar un nuevo producto
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
     const nuevoProducto = req.body;
 
     // Validaciones
@@ -21,28 +22,32 @@ router.post('/', (req, res) => {
 
     // Validar ID
     if (typeof nuevoProducto.id !== 'number' || nuevoProducto.id <= 0) {
-        error.push('El ID debe de ser un número positivo.');
+        errors.push('El ID debe de ser un número positivo.');
     }
 
     // Validar Nombre
     if (!nuevoProducto.nombre || typeof nuevoProducto.nombre !== 'string') {
-        error.push('El nombre es oblogatorio y debe ser una cadena.');
+        errors.push('El nombre es obligatorio y debe ser una cadena.');
     }
 
     // Validar Precio
     if (typeof nuevoProducto.precio !== 'number' || nuevoProducto.precio <= 0) {
-        error.push('El precio debe ser un número positivo.');
+        errors.push('El precio debe ser un número positivo.');
     }
 
-    // Si hay errores, responder con un estado 400 y el mensaje errores
+    // Si hay errores, responder con un estado 400 y el mensaje de errores
     if (errors.length > 0) {
-        return res.status(400).json({ errores });
+        return res.status(400).json({ errors });
     }
 
-    // Si no hay errores, agregar el producto
-    productos.push(nuevoProducto);
-    console.log('Producto recibido:', nuevoProducto);
-    res.status(201).json(nuevoProducto);
+    // Si no hay errores, agregar el producto a la base de datos
+    try {
+        const result = await pool.query('INSERT INTO productos (nombre, precio) VALUES ($1, $2) RETURNING *', [nuevoProducto.nombre, nuevoProducto.precio]);
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al agregar producto' });
+    }
 });
 
 module.exports = router;
