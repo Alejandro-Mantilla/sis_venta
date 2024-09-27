@@ -4,6 +4,23 @@ const pool = require('../db'); // Importar la conexión a la base de datos
 const authenticateToken = require('../middlewares/authMiddleware');
 const jwt = require('jsonwebtoken');
 
+// Ruta para autenticar usuarios y generar un token
+router.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    // Aquí deberías verificar el usuario y la contraseña en la base de datos
+    // Suponiendo que tienes un usuario administrador con usuario y contraseña
+
+    const adminUser = { username: 'admin', password: 'adminpass' }; // Cambia esto por tu lógica de verificación
+
+    if (username === adminUser.username && password === adminUser.password) {
+        const token = jwt.sign({ username: adminUser.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        res.json({ token });
+    } else {
+        res.sendStatus(403); // Forbidden
+    }
+});
+
 // Obtener todos los productos
 router.get('/', (req, res) => {
     pool.query('SELECT * FROM productos', (error, results) => {
@@ -12,6 +29,48 @@ router.get('/', (req, res) => {
         }
         res.json(results.rows);
     });
+});
+
+// Búsqueda de productos por nombre
+router.get('/buscar', async (req, res) => {
+    const { nombre } = req.query; // Capturamos el parámetro de búsqueda
+
+    try {
+        const result = await pool.query(
+            'SELECT * FROM productos WHERE LOWER(nombre) LIKE LOWER($1)',
+            [`%${nombre}%`] // Usamos LIKE para la búsqueda parcial
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron productos con ese nombre' });
+        }
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al buscar productos' });
+    }
+});
+
+// Filtrado de productos por precio
+router.get('/filtrar', async (req, res) => {
+    const { minPrecio, maxPrecio } = req.query; // Capturamos los parámetros de filtrado
+
+    try {
+        const result = await pool.query(
+            'SELECT * FROM productos WHERE precio BETWEEN $1 AND $2',
+            [minPrecio, maxPrecio]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron productos en ese rango de precios' });
+        }
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al filtrar productos por precio' });
+    }
 });
 
 // Agregar un nuevo producto
@@ -95,23 +154,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al eliminar producto' })
-    }
-});
-
-// Ruta para autenticar usuarios y generar un token
-router.post('/login', (req, res) => {
-    const { username, password } = req.body;
-
-    // Aquí deberías verificar el usuario y la contraseña en la base de datos
-    // Suponiendo que tienes un usuario administrador con usuario y contraseña
-
-    const adminUser = { username: 'admin', password: 'adminpass' }; // Cambia esto por tu lógica de verificación
-
-    if (username === adminUser.username && password === adminUser.password) {
-        const token = jwt.sign({ username: adminUser.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.json({ token });
-    } else {
-        res.sendStatus(403); // Forbidden
     }
 });
 
