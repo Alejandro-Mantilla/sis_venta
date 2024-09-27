@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba POST</title>
+</head>
+<body>
+    <h1>Agregar Producto</h1>
+    <form id="productForm">
+        <input type="number" placeholder="ID" id="id" required />
+        <input type="text" placeholder="Nombre" id="nombre" required />
+        <input type="number" placeholder="Precio" id="precio" required />
+        <button type="submit">Agregar Producto</button>
+    </form>
+
+    <script>
+        document.getElementById('productForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const id = document.getElementById('id').value;
+            const nombre = document.getElementById('nombre').value;
+            const precio = document.getElementById('precio').value;
+
+            fetch('/api/productos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: parseInt(id), nombre, precio: parseFloat(precio) }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Producto agregado:', data);
+                alert('Producto agregado exitosamente');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
