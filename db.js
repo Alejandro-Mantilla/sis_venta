@@ -3,7 +3,7 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-    user: 'Dardro', // Cambiar a usuario de postgress
+    user: 'dardro', // Cambiar a usuario de postgress
     host: 'localhost',
     database: 'sist_venta', // Nombre de la base de datos
     password: 'AleCarpio11.', // Cambiar por la contraseña
