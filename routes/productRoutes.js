@@ -1,20 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // Importar la conexión a la base de datos
+const authenticateToken = require('../middlewares/authMiddleware');
+const jwt = require('jsonwebtoken');
 
 // Obtener todos los productos
-router.get('/', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM productos');
-        res.json(result.rows);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error al obtener productos' });
-    }
+router.get('/', (req, res) => {
+    pool.query('SELECT * FROM productos', (error, results) => {
+        if (error) {
+            return res.status(500).json({ error: 'Error al obtener productos' });
+        }
+        res.json(results.rows);
+    });
 });
 
 // Agregar un nuevo producto
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
     const nuevoProducto = req.body;
 
     // Validaciones
@@ -51,7 +52,7 @@ router.post('/', async (req, res) => {
 });
 
 // Actualizar un producto
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { nombre, precio } = req.body;
 
@@ -81,7 +82,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Eliminar producto
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
     // Eiminar el producto de la base de datos
@@ -94,6 +95,23 @@ router.delete('/:id', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al eliminar producto' })
+    }
+});
+
+// Ruta para autenticar usuarios y generar un token
+router.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    // Aquí deberías verificar el usuario y la contraseña en la base de datos
+    // Suponiendo que tienes un usuario administrador con usuario y contraseña
+
+    const adminUser = { username: 'admin', password: 'adminpass' }; // Cambia esto por tu lógica de verificación
+
+    if (username === adminUser.username && password === adminUser.password) {
+        const token = jwt.sign({ username: adminUser.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        res.json({ token });
+    } else {
+        res.sendStatus(403); // Forbidden
     }
 });
 
